@@ -1,3 +1,7 @@
+#
+# Copyright (C) 2022 Stephen Rodgers <steve@rodgers619.com>
+# See LICENSE file for license info
+#                          
 
 from machine import I2C
 from micropython import const
