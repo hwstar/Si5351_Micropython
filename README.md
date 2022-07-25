@@ -6,6 +6,7 @@ Differences between the C++ library and the this Micropython module:
 
 1. The constant names have been shortened to reduce the size of the image by eliminating the SI5351 prefix.
 2. The signature of the set_freq method is reversed from the Etherkit version it is set_freq(clk, freq).
-    which is more consistant with the rest of the methods
+    which is more consistent with the rest of the methods
 
+See the example file si5351_test.py for hints on how to use.
 
