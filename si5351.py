@@ -1,3 +1,4 @@
+
 from machine import I2C
 from micropython import const
 import array
@@ -252,56 +253,44 @@ class SI5351():
     
     def _write_reg(self, reg_addr: int, data: int):
         reg_data = bytearray([reg_addr, data])
-        #self._debug_print_bytes(reg_data, label = "write_reg(): ")
         res = self._i2c.writeto(self._device_addr, bytes(reg_data))
-        #print(res)
         return res
     
     def _write_bulk(self, reg_addr: int, data: bytearray):
         reg_data = bytearray([reg_addr])
         reg_data += data
-        #self._debug_print_bytes(reg_data, label = "write_bulk(): ") # Debug
         res =  self._i2c.writeto(self._device_addr, bytes(reg_data))
-        #print(res)
         return res
     
     def _read_reg(self, reg_addr):
-        reg = bytearray([reg_addr])
-        #print("read_reg(): ", reg)
-        #self._debug_print_bytes(byte_string)             
+        reg = bytearray([reg_addr])             
         self._i2c.writeto(self._device_addr, reg, False)        
         res = self._i2c.readfrom(self._device_addr, 1)
         if len(res):
             res = int(res[0])
-            #print("read_reg() res:", hex(res))
             return res
         else:
-            #print("read_reg() returned nothing")
             return None
     
     
     
     def _pll_calc(self, pll: int, freq: int, correction : int, vcxo : bool):
         # Return (freq, register set array)
-        #print("pll_calc() pll=" ,pll)
-        #print("pll_calc()freq=", freq)
-        #print("pll_calc()correction=", correction)
-        #print("pll_calc()vcxo =", vcxo)
+     
         
         ref_freq = self._xtal_freq[self._plla_ref_osc] if pll == PLLA else self._xtal_freq[self._pllb_ref_osc]
         
-        #print("pll_calc() ref_freq =", ref_freq)
-       
+      
         ref_freq *= _FREQ_MULT
         
-        #print("pll_calc() ref_freq * freq_mult =", ref_freq)
+      
         
         # Factor calibration value into nominal xtal frequency.
         # Measured in ppb
       
         ref_freq +=((((correction << 31) // 1000000000) * ref_freq) >> 31)
        
-        #print("pll_calc() ref_freq corr =", ref_freq)
+  
         
         # PLL bounds check
         if freq < _PLL_VCO_MIN * _FREQ_MULT:
@@ -309,20 +298,17 @@ class SI5351():
         if freq > _PLL_VCO_MAX * _FREQ_MULT:
             freq = _PLL_VCO_MAX * _FREQ_MULT
             
-        #print("pll_calc() freq: ", freq)
-        
+       
         
         # Determine integer part of feedback eq.
         a = freq // ref_freq
        
-        #print("pll_calc() a:", a)
+       
         
         if a < _PLL_A_MIN:
             freq = ref_freq * _PLL_A_MIN
         if a > _PLL_A_MAX:
             freq = ref_freq * _PLL_A_MAX
-            
-        #print("pll_calc() freq:", freq)
         
         # Find best approximation for b/c = fVCO mod fIN
         if vcxo is True:
@@ -332,8 +318,7 @@ class SI5351():
             b = (((freq % ref_freq)) * _RFRAC_DENOM) // ref_freq;
             c = _RFRAC_DENOM if b else 1
         
-        #print("pll_calc() b:", b)
-        #print("pll_calc() c:", c)
+    
         
         
         # Calculate parameters
@@ -341,23 +326,18 @@ class SI5351():
         p2 = 128 * b - c * ((128 * b) // c)
         p3 = c
         
-        #print("pll_calc() p1:", p1)
-        #print("pll_calc() p2:", p2)
-        #print("pll_calc() p3:", p3)
+     
         
         
         # Recalculate frequency as fIN * (a + b/c)
         lltmp = ref_freq
-        #print("pll_calc() lltmp(ref_freq): ", lltmp)
+
         lltmp *= b
         lltmp = lltmp//c
-        #print("pll_calc() lltmp(b/c): ", lltmp)
+     
         freq = lltmp
         freq += ref_freq * a
         reg_set = array.array('L', [p1,p2,p3])
-        
-        #print("pll_calc() freq", freq)
-        #print("pll_calc() reg_set", reg_set)
        
         return (((128 * a * 1000000 + b) if vcxo else freq), reg_set)
        
@@ -365,8 +345,7 @@ class SI5351():
         # Returns (multi synth value, reg_set)
         divby4 = False
         ret_val = False
-        #print("multisynth_calc() freq: ", freq)
-        #print("multisynth_calc() pll_freq: ", pll_freq)
+     
         
         # Multisynth bounds checking
         if freq > _MULTISYNTH_MAX_FREQ * _FREQ_MULT:
@@ -375,7 +354,7 @@ class SI5351():
             freq = _MULTISYNTH_MIN_FREQ * _FREQ_MULT
         if freq >= _MULTISYNTH_DIVBY4_FREQ * _FREQ_MULT:
             divby4 = True
-        #print("multisynth_calc() freq 2: ", freq)
+      
             
         if pll_freq == 0:
             if divby4 is False:
@@ -391,10 +370,7 @@ class SI5351():
             b = 0
             c = 1
             pll_freq = a * freq
-            #print("multisynth_calc() a zero: ", a)
-            #print("multisynth_calc() b zero : ", b)
-            #print("multisynth_calc() c zero: ", c)
-            #print("multisynth_calc() pll_freq zero: ", pll_freq)
+        
         else:
             # Preset PLL, so return the actual freq for these params instead of PLL freq
             ret_val = True
@@ -406,15 +382,11 @@ class SI5351():
                 freq = pll_freq // _MULTISYNTH_A_MAX
             b = (pll_freq % freq * _RFRAC_DENOM) // freq
             c = _RFRAC_DENOM if b else 1
-            #print("multisynth_calc() a preset: ", a)
-            #print("multisynth_calc() b preset: ", b)
-            #print("multisynth_calc() c preset : ", c)
-            #print("multisynth_calc() pll_freq preset: ", pll_freq)
+       
             
             
         # Calculate parameters
         if divby4 == True:
-            #print("multisynth_calc() divby4 is True")
             p3 = 1
             p2 = 0
             p1 = 0
@@ -426,7 +398,6 @@ class SI5351():
         reg_set.append(p1)
         reg_set.append(p2)
         reg_set.append(p3)
-        #print("multisynth_calc() reg_set: ", reg_set)
         return((pll_freq if ret_val is False else freq), reg_set)
     
     def _multisynth67_calc(self, freq: int, pll_freq: int):
@@ -493,12 +464,9 @@ class SI5351():
     
                        
     def _ms_div(self, clk: int, r_div: int, div_by_4: bool):
-        #print("ms_div() clk: ", clk)
-        #print("ms_div() r_div: ", r_div)
         
         if clk == CLK0:
             reg_addr = _CLK0_PARAMETERS + 2
-            #print("ms_div() reg_addr: ", reg_addr)
         elif clk == CLK1:
             reg_addr = _CLK1_PARAMETERS + 2
         elif clk == CLK2:
@@ -515,7 +483,6 @@ class SI5351():
             reg_addr = _CLK6_7_OUTPUT_DIVIDER
         # Read the register
         reg_val = self._read_reg(reg_addr)
-        #print("ms_div() reg_val: ", reg_val)
         if clk <= CLK5:
             # Clear the relevant bits
             reg_val &= ~0x7c
@@ -531,7 +498,6 @@ class SI5351():
         elif clk == CLK7:
             reg_val &= ~0x70
             reg_val |= (r_div << _OUTPUT_CLK_DIV_SHIFT)
-        #print("ms_div() reg_val to write: ", reg_val)
         self._write_reg(reg_addr, reg_val)
     
     def _select_r_div(self, freq: int):
@@ -626,8 +592,6 @@ class SI5351():
     
     # Set the correction factor
     def _set_correction(self, corr: int, ref_osc: int):
-        #print("_set_correction() corr: ", corr)
-        #print("_set_correction() ref_osc: ", ref_osc)
         self._ref_correction[ref_osc & 0xFF] = corr
         # Recalculate and set PLL freqs based on correction value
         self._set_pll(self._plla_freq, PLLA)
@@ -636,13 +600,11 @@ class SI5351():
     # Set the indicated multisynth into integer mode.
     def _set_int(self, clk, enable):
         clk &= 0x07
-        #print("set_int() clk & 0x07: ", clk)
         reg_val = self._read_reg(_CLK0_CTRL + clk)
         if enable is True:
             reg_val |= _CLK_INTEGER_MODE
         else:
             reg_val &= ~_CLK_INTEGER_MODE
-        #print("set_int() reg_val: ", reg_val)
         self._write_reg(_CLK0_CTRL + clk, reg_val);
         
              
@@ -650,16 +612,13 @@ class SI5351():
              
     # Set the specified PLL to a specific oscillation frequency
     def _set_pll(self, pll_freq, pll_assignment):
-            #print("_set_pll() pll_freq:", pll_freq)
           
-            
             if pll_assignment == PLLA:
                 (freq, pll_reg) = self._pll_calc(PLLA, pll_freq, self._ref_correction[self._plla_ref_osc], 0)
             else:
                 (freq, pll_reg) = self._pll_calc(PLLB, pll_freq, self._ref_correction[self._pllb_ref_osc], 0)
               
-            #print("pll_calc() freq:", freq)
-            #print("pll_calc() pll_reg", pll_reg)
+      
             
             # Derive the register values to write
             # Prepare a bytearray for parameters to be written to
@@ -687,22 +646,16 @@ class SI5351():
             temp = ((pll_reg[_P3] >> 12) & 0xF0)
             temp2 = ((pll_reg[_P2] >> 16) & 0x0F)
             temp += temp2
-            #print("set_pll() pll_reg[_P3] >> 16 & 0x0F + temp", hex(temp))
             params.append(temp)
            
             
             # Registers 32,33
             temp = (pll_reg[_P2] >> 8) & 0xFF
             params.append(temp)
-            #print("set_pll() pll_reg[_P2] >> 8 & 0xFF", temp)
         
             temp = pll_reg[_P2]  & 0xFF
             params.append(temp)
-            #print("set_pll() pll_reg[_P2] & 0xFF", temp)
-                  
-            #self._debug_print_bytes(params, label="set_pll() parameter_register_values: ") # Debug only
-            
-           
+                             
             
             # Write the parameters
             if pll_assignment == PLLA:
@@ -717,53 +670,38 @@ class SI5351():
         if clk <= CLK5:
             params = bytearray()
             clk &= 7
-            #print("set_ms() clk: ", clk)
-            #print("set_ms() ms_reg: ", ms_reg)
-            #print("set_ms() int_mode: ", int_mode)
-            #print("set_ms() r_div: ", r_div)
-            #print("set_ms() div_by_4: ", div_by_4)
             
             # Registers 42,43 for CLK0
             temp = ((ms_reg[_P3] >> 8) & 0xFF)
             params.append(temp)
-            #print("set_ms() reg 42:", temp)
             temp = ms_reg[_P3]  & 0xFF
             params.append(temp)
-            #print("set_ms() reg 43:", temp)
             
             # Register 44 for CLK0
             reg_val = self._read_reg((_CLK0_PARAMETERS + 2) + (clk * 8))
-            
-            #print("set_ms() reg_val: ", reg_val)
             
             reg_val &= ~0x03
            
             temp = reg_val | ((ms_reg[_P1] >> 16) & 0x03)
             params.append(temp)
-            #print("set_ms() reg 44:", temp)
             
             # Registers 45-46 for CLK0
             temp = (ms_reg[_P1] >> 8) & 0xFF
             params.append(temp)
-            #print("set_ms() reg 45:", temp)
             temp = ms_reg[_P1]  & 0xFF           
             params.append(temp)
-            #print("set_ms() reg 46:", temp)
             
             # Register 47 for CLK0
             temp = ((ms_reg[_P3] >> 12) & 0xF0)
             temp += ((ms_reg[_P2] >> 16) & 0x0F)
             params.append(temp)
-            #print("set_ms() reg 47:", temp)
             
             # Registers 48, 49 for CLK0
             temp = (ms_reg[_P2] >> 8) & 0xFF
             params.append(temp)
-            #print("set_ms() reg 48:", temp)
             temp = ms_reg[_P2]  & 0xFF
             params.append(temp)
-            #print("set_ms() reg 49:", temp)
-        
+          
         else:
             # MS6 and MS7 only use one register
             temp = ms_reg[_P1] & 0xFF
@@ -873,9 +811,6 @@ class SI5351():
     # Initialize the SI5351
     
     def init (self, xtal_load_c: int, xo_freq: int, corr: int):
-        #print("init() xtal_load_c", xtal_load_c)
-        #print("init() xo_freq: ", xo_freq)
-        #print("init() corr: ", corr)
         # return bool
         device_addresses = self._i2c.scan()
         if self._device_addr not in device_addresses:
@@ -884,7 +819,6 @@ class SI5351():
         # Wait for _SYS_INIT flag to be clear, indicating the device is ready
         while True:
             status_reg = self._read_reg(_DEVICE_STATUS)
-            #print("init() status reg:", hex(status_reg))
             if (status_reg >> 7) == 0:
                 break;
         # Set crystal load capacitance
@@ -910,8 +844,6 @@ class SI5351():
         div_by_4 = False
         clk &= 0x07
         
-        #print("set_freq() freq:", freq)
-        
         # Check which Multisynth is being set
         if clk <= CLK5:
             #
@@ -924,17 +856,14 @@ class SI5351():
             # Upper bounds check
             if freq > _MULTISYNTH_MAX_FREQ * _FREQ_MULT:
                 freq = _MULTISYNTH_MAX_FREQ * _FREQ_MULT
-            #print("set_freq() freq 2:", freq)
             # If requested freq >100 MHz and no other outputs are already >100 MHz,
             # we need to recalculate PLLA and then recalculate all other CLK outputs
             # on same PLL
             if freq > (_MULTISYNTH_SHARE_MAX * _FREQ_MULT):
                 # Check other clocks on the same PLL
-                #print("set_freq() recalculate PLLA")
                 for i in range(0,6):
                     if self._clk_freq[i] > (_MULTISYNTH_SHARE_MAX * _FREQ_MULT):
                         if (i != clk) and  (self._pll_assignment[i] == self._pll_assignment[clk]):
-                            #print("set_freq() recalculate PLLA failed")
                             return False # won't set if any other clks already >100 MHz
             
                 # Enable the output on first set_freq only
@@ -945,8 +874,6 @@ class SI5351():
                 self._clk_freq[clk] = freq
                 # Calculate the proper PLL frequency
                 (res, ms_reg) = self._multisynth_calc(freq, 0)
-                #print("set_freq() res:", res)
-                #print("set_freq() ms_reg:", ms_reg)
                 # Set PLL
                 #self._set_pll(pll_freq, self._pll_assignment[clk])
                 # Recalculate params for other synths on the same PLL
@@ -964,15 +891,9 @@ class SI5351():
                             else:
                                 div_by_4 = False
                                 int_mode = False
-                            #print("set_freq() i:", i)
-                            #print("set_freq() temp_reg:", temp_reg)
-                            #print("set_freq() int_mode:", int_mode)
-                            #print("set_freq() r_div:", r_div)
-                            #print("set_freq() div_by_4:", div_by_4)
                             self._set_ms(i, temp_reg, int_mode, r_div, div_by_4)
                 self._pll_reset(self._pll_assignment[clk])
             else:
-                #print("set_freq(): else other outputs")
                 self._clk_freq[clk] = freq
                 # Enable the output on the first set_freq only
                 if self._clk_first_set[clk] == False:
@@ -983,17 +904,10 @@ class SI5351():
                 # Calculate the proper r_div value
                 
                 if self._pll_assignment[clk] == PLLA:
-                    #print("set_freq() self._plla_freq: ", self._plla_freq)
                     (res, ms_reg) = self._multisynth_calc(freq, self._plla_freq)
                 else:
-                    #print("set_freq() PLLB")
                     (res, ms_reg) = self._multisynth_calc(freq, self._pllb_freq)
                 # Set the multisynth registers
-                #print("set_freq() clk:", clk)
-                #print("set_freq() ms_reg:", ms_reg)
-                #print("set_freq() int_mode:", int_mode)
-                #print("set_freq() r_div:", r_div)
-                #print("set_freq() div_by_4:", div_by_4)
                 self._set_ms(clk, ms_reg, int_mode, r_div, div_by_4)
             return 0
         else: #if clk <= CLK5:
