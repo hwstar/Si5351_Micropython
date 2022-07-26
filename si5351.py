@@ -514,9 +514,9 @@ class SI5351():
         elif (freq >= _CLKOUT_MIN_FREQ * _FREQ_MULT * 2) and (freq < _CLKOUT_MIN_FREQ * _FREQ_MULT * 4):
             r_div = _OUTPUT_CLK_DIV_64
             freq *= 64
-        elif (freq >= _CLKOUT_MIN_FREQ * _FREQ_MULT * 2) and (freq < _CLKOUT_MIN_FREQ * _FREQ_MULT * 4):
+        elif (freq >= _CLKOUT_MIN_FREQ * _FREQ_MULT * 4) and (freq < _CLKOUT_MIN_FREQ * _FREQ_MULT * 8):
             r_div = _OUTPUT_CLK_DIV_32
-            freq *= 64
+            freq *= 32
         elif(freq >= _CLKOUT_MIN_FREQ * _FREQ_MULT * 8) and (freq < _CLKOUT_MIN_FREQ * _FREQ_MULT * 16):
             r_div = _OUTPUT_CLK_DIV_16
             freq *= 16
@@ -842,7 +842,7 @@ class SI5351():
         return True
     
     # Set a specific output to a desired clock frequency
-    def set_freq(self, clk, freq):
+    def set_freq(self, clk: int , freq: int):
         # Return False if failure to set, else True
         int_mode = False
         div_by_4 = False
@@ -986,7 +986,7 @@ class SI5351():
     #  clk - Clock output
     # enable - Set to True to enable, False to disable
     
-    def output_enable(self, clk, enable):
+    def output_enable(self, clk: int, enable: bool):
         clk &= 0x07
         reg_val = self._read_reg(_OUTPUT_ENABLE_CTRL)
         if enable is True:
@@ -1001,7 +1001,7 @@ class SI5351():
     #
     # drive - Desired drive level
    
-    def drive_strength(self, clk, drive):
+    def drive_strength(self, clk: int, drive: int):
         clk &= 0x07
         reg_val = self._read_reg(_CLK0_CTRL + clk);
         reg_val &= ~0x03 # Mask
